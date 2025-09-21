@@ -8,7 +8,7 @@ Follow these steps in order to build the emulator (make sure ncurses is installe
 
 ```bash
 git clone 
-cd Apple1EMU
+cd Apple1-EMU
 make clean & make
 ```
 
