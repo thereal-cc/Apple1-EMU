@@ -19,15 +19,15 @@ void cpu_init(cpu_t *cpu)
     cpu->key_value = 0;
 
     // Interrupt Handler
-    cpu->memory[INTERRUPT_HANDLER] = 0x00;
-    cpu->memory[INTERRUPT_HANDLER + 1] = 0xF0;
+    cpu->memory[IRQ_LOW] = 0x00;
+    cpu->memory[IRQ_HIGH] = 0xF0;
 
     // Set reset vector in ROM
     cpu->memory[RESET_LOW] = 0x00;
     cpu->memory[RESET_HIGH] = 0xFF;
 
-    cpu->memory[BRK_HANDLER] = 0x00;
-    cpu->memory[BRK_HANDLER + 1] = 0x00;
+    cpu->memory[BRK_LOW] = 0x00;
+    cpu->memory[BRK_HIGH] = 0x00;
 
     cpu->running = true;
     cpu->global_cycles = 0;

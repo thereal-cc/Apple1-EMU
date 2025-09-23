@@ -60,8 +60,8 @@ u16 indx_address(cpu_t *cpu) {
     u8 lo = read_memory(cpu, zp_addr);
     u8 hi = read_memory(cpu, (zp_addr + 1) & 0xFF);
     u16 addr = ((hi << 8) | lo);
-    printw("X: zp=%02X lo=%02X hi=%02X Y=%02X => %04X\n",zp_addr, lo, hi, cpu->Y, addr);
-    refresh();
+    //printw("X: zp=%02X lo=%02X hi=%02X Y=%02X => %04X\n",zp_addr, lo, hi, cpu->Y, addr);
+    //refresh();
     return addr;
 }
 
@@ -70,8 +70,8 @@ u16 indy_address(cpu_t *cpu) {
     u8 lo = read_memory(cpu, zp_addr);
     u8 hi = read_memory(cpu, (zp_addr + 1) & 0xFF);
     u16 addr = ((hi << 8) | lo) + cpu->Y;
-    printw("Y: zp=%02X lo=%02X hi=%02X Y=%02X => %04X\n", zp_addr, lo, hi, cpu->Y, addr);
-    refresh();
+    //printw("Y: zp=%02X lo=%02X hi=%02X Y=%02X => %04X\n", zp_addr, lo, hi, cpu->Y, addr);
+    //refresh();
     return addr;
 }
 
@@ -607,7 +607,7 @@ void BRK(cpu_t *cpu, u16 addr)
     write_memory(cpu, (0x100 | cpu->SP), value);
     cpu->SP--;
 
-    cpu->PC = (read_memory(cpu, BRK_HANDLER)) | (read_memory(cpu, BRK_HANDLER+1) << 8);
+    cpu->PC = (read_memory(cpu, BRK_LOW)) | (read_memory(cpu, BRK_HIGH) << 8);
 }
 
 void NOP(cpu_t *cpu, u16 addr)
