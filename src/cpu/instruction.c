@@ -20,21 +20,21 @@ u16 zpy_address(cpu_t *cpu) {
 }
 
 u16 abs_address(cpu_t *cpu) {
-    u16 lo = read_memory(cpu, cpu->PC++);
-    u16 hi = read_memory(cpu, cpu->PC++);
+    u8 lo = read_memory(cpu, cpu->PC++);
+    u8 hi = read_memory(cpu, cpu->PC++);
     return (hi << 8) | lo;  
 }
 
 u16 abx_address(cpu_t *cpu) {
-    u16 lo = read_memory(cpu, cpu->PC++);
-    u16 hi = read_memory(cpu, cpu->PC++);
+    u8 lo = read_memory(cpu, cpu->PC++);
+    u8 hi = read_memory(cpu, cpu->PC++);
     u16 base = (hi << 8) | lo;
     return base + cpu->X; 
 }
 
 u16 aby_address(cpu_t *cpu) {
-    u16 lo = read_memory(cpu, cpu->PC++);
-    u16 hi = read_memory(cpu, cpu->PC++);
+    u8 lo = read_memory(cpu, cpu->PC++);
+    u8 hi = read_memory(cpu, cpu->PC++);
     u16 base = (hi << 8) | lo;
     return base + cpu->Y; 
 }
@@ -45,8 +45,8 @@ u16 ind_address(cpu_t *cpu) {
     u16 ptr = (ptr_hi << 8) | ptr_lo;
 
     // Emulate 6502 page-boundary bug
-    u16 lo = read_memory(cpu, ptr);
-    u16 hi;
+    u8 lo = read_memory(cpu, ptr);
+    u8 hi;
     if ((ptr & 0x00FF) == 0x00FF) {
         hi = read_memory(cpu, ptr & 0xFF00); // wraps around page
     } else {
