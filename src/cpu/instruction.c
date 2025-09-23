@@ -6,7 +6,7 @@ u16 imm_address(cpu_t *cpu) {
 
 u16 zp_address(cpu_t *cpu) {
     u8 addr = read_memory(cpu, cpu->PC++);
-    return addr & 0xFF;
+    return addr;
 }
 
 u16 zpx_address(cpu_t *cpu) {
@@ -56,18 +56,17 @@ u16 ind_address(cpu_t *cpu) {
 }
 
 u16 indx_address(cpu_t *cpu) {
-    u8 zp_addr = (read_memory(cpu, cpu->PC++) + cpu->X) & 0xFF;
+    u8 zp_addr = read_memory(cpu, cpu->PC++);
     u8 lo = read_memory(cpu, zp_addr);
     u8 hi = read_memory(cpu, (zp_addr + 1) & 0xFF);
-    return (hi << 8) | lo;
+    return ((hi << 8) | lo) + cpu->X;
 }
 
 u16 indy_address(cpu_t *cpu) {
     u8 zp_addr = read_memory(cpu, cpu->PC++);
     u8 lo = read_memory(cpu, zp_addr);
     u8 hi = read_memory(cpu, (zp_addr + 1) & 0xFF);
-    u16 addr = (hi << 8) | lo;
-    return addr + cpu->Y;
+    return ((hi << 8) | lo) + cpu->Y;
 }
 
 u16 imp_address(cpu_t *cpu) {
@@ -83,8 +82,8 @@ void LDA(cpu_t *cpu, u16 addr)
     u8 value = read_memory(cpu, addr);
     cpu->A = value;
 
-    Z_flag(cpu, cpu->A);
-    N_flag(cpu, cpu->A);
+    cpu->Z = (cpu->A == 0);
+	cpu->N = (cpu->A >> 7) & 1;  
 }
 
 void LDX(cpu_t *cpu, u16 addr)
@@ -92,8 +91,8 @@ void LDX(cpu_t *cpu, u16 addr)
     u8 value = read_memory(cpu, addr);
     cpu->X = value;
 
-    Z_flag(cpu, cpu->X);
-    N_flag(cpu, cpu->X);
+    cpu->Z = (cpu->X == 0);
+	cpu->N = (cpu->X >> 7) & 1;  
 }
 
 void LDY(cpu_t *cpu, u16 addr)
@@ -101,8 +100,8 @@ void LDY(cpu_t *cpu, u16 addr)
     u8 value = read_memory(cpu, addr);
     cpu->Y = value;
 
-    Z_flag(cpu, cpu->Y);
-    N_flag(cpu, cpu->Y);
+    cpu->Z = (cpu->Y == 0);
+	cpu->N = (cpu->Y >> 7) & 1;  
 }
 
 void STA(cpu_t *cpu, u16 addr)
@@ -123,25 +122,25 @@ void STY(cpu_t *cpu, u16 addr)
 void INC(cpu_t *cpu, u16 addr)
 {
     u8 value = read_memory(cpu, addr);
-    value++;
+    value = (value + 1) & 0xFF;
     write_memory(cpu, addr, value);
 
-    Z_flag(cpu, value);
-    N_flag(cpu, value);
+    cpu->Z = (value == 0);
+    cpu->N = (value >> 7) & 1;
 }
 
 void INX(cpu_t *cpu, u16 addr)
 {
-    cpu->X++;
-    Z_flag(cpu, cpu->X);
-    N_flag(cpu, cpu->X);
+    cpu->X = (cpu->X + 1) & 0xFF;
+    cpu->Z = (cpu->X == 0);
+    cpu->N = (cpu->X >> 7) & 1;
 }
 
 void INY(cpu_t *cpu, u16 addr)
 {
-    cpu->Y++;
-    Z_flag(cpu, cpu->Y);
-    N_flag(cpu, cpu->Y);
+    cpu->Y = (cpu->Y + 1) & 0xFF;
+    cpu->Z = (cpu->Y == 0);
+    cpu->N = (cpu->Y >> 7) & 1;
 }
 
 void DEC(cpu_t *cpu, u16 addr)
@@ -150,24 +149,22 @@ void DEC(cpu_t *cpu, u16 addr)
     value = (value - 1) & 0xFF;
     write_memory(cpu, addr, value);
 
-    Z_flag(cpu, value);
-    N_flag(cpu, value);
+    cpu->Z = (value == 0);
+    cpu->N = (value >> 7) & 1;
 }
 
 void DEX(cpu_t *cpu, u16 addr)
 {
     cpu->X--;
-
-    Z_flag(cpu, cpu->X);
-    N_flag(cpu, cpu->X);
+    cpu->Z = (cpu->X == 0);
+    cpu->N = (cpu->X >> 7) & 1;
 }
 
 void DEY(cpu_t *cpu, u16 addr)
 {
     cpu->Y--;
-
-    Z_flag(cpu, cpu->Y);
-    N_flag(cpu, cpu->Y);
+    cpu->Z = (cpu->Y == 0);
+    cpu->N = (cpu->Y >> 7) & 1;
 }
 
 void PHA(cpu_t *cpu, u16 addr)
@@ -197,8 +194,8 @@ void PLA(cpu_t *cpu, u16 addr)
     cpu->SP++;
     cpu->A = read_memory(cpu, (0x0100 | cpu->SP));
     
-    Z_flag(cpu, cpu->A);
-    N_flag(cpu, cpu->A);
+    cpu->Z = (cpu->A == 0);
+    cpu->N = (cpu->A >> 7) & 1;
 }
 
 void PLP(cpu_t *cpu, u16 addr)
@@ -206,60 +203,52 @@ void PLP(cpu_t *cpu, u16 addr)
     cpu->SP++;
     u8 value = read_memory(cpu, (0x100 | cpu->SP));
 
-    cpu->C = (value & CARRY_FLAG) ? 1 : 0;
-    cpu->Z = (value & ZERO_FLAG) ? 1 : 0;
-    cpu->I = (value & INTERRUPT_FLAG) ? 1 : 0;
-    cpu->D = (value & DECIMAL_FLAG) ? 1 : 0;
-    cpu->V = (value & OVERFLOW_FLAG) ? 1 : 0;
-    cpu->N = (value & NEGATIVE_FLAG) ? 1 : 0;
+    cpu->C = (value & CARRY_FLAG);
+    cpu->Z = (value & ZERO_FLAG);
+    cpu->I = (value & INTERRUPT_FLAG);
+    cpu->D = (value & DECIMAL_FLAG);
+    cpu->V = (value & OVERFLOW_FLAG);
+    cpu->N = (value & NEGATIVE_FLAG);
 }
 
-void BCC(cpu_t *cpu, u16 offset)
+void BCC(cpu_t *cpu, u16 addr)
 {
-    if (cpu->C == 0)
-        cpu->PC += (i8)offset;
+    if (cpu->C == 0) cpu->PC += (i8)addr;
 }
 
-void BCS(cpu_t *cpu, u16 offset)
+void BCS(cpu_t *cpu, u16 addr)
 {
-    if (cpu->C != 0)
-        cpu->PC += (i8)offset;
+    if (cpu->C == 1) cpu->PC += (i8)addr;
 }
 
-void BEQ(cpu_t *cpu, u16 offset)
+void BEQ(cpu_t *cpu, u16 addr)
 {
-    if (cpu->Z != 0)
-        cpu->PC += (i8)offset;
+    if (cpu->Z == 1) cpu->PC += (i8)addr;
 }
 
-void BNE(cpu_t *cpu, u16 offset)
+void BNE(cpu_t *cpu, u16 addr)
 {
-    if (cpu->Z == 0)
-        cpu->PC += (i8)offset;
+    if (cpu->Z == 0) cpu->PC += (i8)addr;
 }
 
-void BMI(cpu_t *cpu, u16 offset)
+void BMI(cpu_t *cpu, u16 addr)
 {
-    if (cpu->N != 0)
-        cpu->PC += (i8)offset;
+    if (cpu->N == 1) cpu->PC += (i8)addr;
 }
 
-void BPL(cpu_t *cpu, u16 offset)
+void BPL(cpu_t *cpu, u16 addr)
 {
-    if (cpu->N == 0)
-        cpu->PC += (i8)offset;
+    if (cpu->N == 0) cpu->PC += (i8)addr;
 }
 
-void BVC(cpu_t *cpu, u16 offset)
+void BVC(cpu_t *cpu, u16 addr)
 {
-    if (cpu->V == 0)
-        cpu->PC += (i8)offset;
+    if (cpu->V == 0) cpu->PC += (i8)addr;
 }
 
-void BVS(cpu_t *cpu, u16 offset)
+void BVS(cpu_t *cpu, u16 addr)
 {
-    if (cpu->V != 0)
-        cpu->PC += (i8)offset;
+    if (cpu->V == 1) cpu->PC += (i8)addr;
 }
 
 // Jump
@@ -272,12 +261,9 @@ void JSR(cpu_t *cpu, u16 addr)
 {
     u16 return_addr = cpu->PC - 1;
 
-    // High Byte
-    write_memory(cpu, (0x100 | cpu->SP), (return_addr >> 8) & 0xFF);
+    write_memory(cpu, 0x100 | cpu->SP, (return_addr >> 8) & 0xFF); // hi
     cpu->SP--;
-
-    // Low Byte
-    write_memory(cpu, (0x100 | cpu->SP), return_addr & 0xFF);
+    write_memory(cpu, 0x100 | cpu->SP, return_addr & 0xFF);        // lo
     cpu->SP--;
 
     cpu->PC = addr;
@@ -300,13 +286,13 @@ void RTI(cpu_t *cpu, u16 addr)
     cpu->SP++;
     u8 value = read_memory(cpu, (0x100 | cpu->SP));
 
-    cpu->C = (value & CARRY_FLAG) ? 1 : 0;
-    cpu->Z = (value & ZERO_FLAG) ? 1 : 0;
-    cpu->I = (value & INTERRUPT_FLAG) ? 1 : 0;
-    cpu->D = (value & DECIMAL_FLAG) ? 1 : 0;
-    cpu->B = (value & BREAK_FLAG) ? 1 : 0;
-    cpu->V = (value & OVERFLOW_FLAG) ? 1 : 0;
-    cpu->N = (value & NEGATIVE_FLAG) ? 1 : 0;
+    cpu->C = (value & CARRY_FLAG);
+    cpu->Z = (value & ZERO_FLAG);
+    cpu->I = (value & INTERRUPT_FLAG);
+    cpu->D = (value & DECIMAL_FLAG);
+    cpu->B = (value & BREAK_FLAG);
+    cpu->V = (value & OVERFLOW_FLAG);
+    cpu->N = (value & NEGATIVE_FLAG);
 
     // Low Byte of Return Address
     cpu->SP++;
@@ -323,37 +309,39 @@ void TAX(cpu_t *cpu, u16 addr)
 {
     cpu->X = cpu->A;
 
-    Z_flag(cpu, cpu->X);
-    N_flag(cpu, cpu->X);
+    cpu->Z = (cpu->X == 0);
+	cpu->N = (cpu->X >> 7) & 1;    
 }
 
 void TAY(cpu_t *cpu, u16 addr)
 {
     cpu->Y = cpu->A;
     
-    Z_flag(cpu, cpu->Y);
-    N_flag(cpu, cpu->Y);
+    cpu->Z = (cpu->Y == 0);
+	cpu->N = (cpu->Y >> 7) & 1;    
 }
 
 void TXA(cpu_t *cpu, u16 addr)
 {
     cpu->A = cpu->X;
     
-    Z_flag(cpu, cpu->A);
-    N_flag(cpu, cpu->A);
+    cpu->Z = (cpu->A == 0);
+	cpu->N = (cpu->A >> 7) & 1;    
 } 
 
 void TYA(cpu_t *cpu, u16 addr)
 {
     cpu->A = cpu->Y;
     
-    Z_flag(cpu, cpu->A);
-    N_flag(cpu, cpu->A);
+    cpu->Z = (cpu->A == 0);
+	cpu->N = (cpu->A >> 7) & 1;    
 }
 
 void TSX(cpu_t *cpu, u16 addr)
 {
     cpu->X = cpu->SP;
+    cpu->Z = (cpu->X == 0);
+	cpu->N = (cpu->X >> 7) & 1;    
 }
 
 void TXS(cpu_t *cpu, u16 addr)
@@ -365,11 +353,10 @@ void TXS(cpu_t *cpu, u16 addr)
 void ADC(cpu_t *cpu, u16 addr)
 {
     u8 value = read_memory(cpu, addr);
-    u8 carry_in = cpu->C;
-    u16 result = cpu->A + value + carry_in;
+    u16 result = cpu->A + value + cpu->C;
 
     if (cpu->D) {
-        u16 tmp = (cpu->A & 0x0F) + (value & 0x0F) + carry_in;
+        u16 tmp = (cpu->A & 0x0F) + (value & 0x0F) + cpu->C;
 
         if (tmp > 9) {
             result += 6;
@@ -379,30 +366,29 @@ void ADC(cpu_t *cpu, u16 addr)
         }
     }
 
-    C_flag(cpu, result);
-    V_flag(cpu, value, result);
+    cpu->C = (result & 0x100);
+	cpu->V = (cpu->A ^ result) & (value ^ result) & NEGATIVE_FLAG;
 
-    cpu->A = (u8)result;
+    cpu->A = result & 0xFF;
 
-    Z_flag(cpu, cpu->A);
-    N_flag(cpu, cpu->A);
+    cpu->Z = (cpu->A == 0);
+    cpu->N = (cpu->A >> 7) & 1;
 }
 
 void SBC(cpu_t *cpu, u16 addr)
 {
     u8 value = read_memory(cpu, addr);
-    u8 carry_in = cpu->C;
-    u16 result = cpu->A + (value ^ 0xFF) + carry_in;
-
-    C_flag(cpu, result);
-    V_flag(cpu, value, result);
+    u16 result = cpu->A - value - (1 - cpu->C);
+    cpu->C = (result < 0x100);  
+    cpu->V = ((cpu->A ^ result) & (~value ^ result) & 0x80) != 0;
+    
 
     if (cpu->D) {
         // Decimal mode adjustment
         u16 tmp = result;
 
         // Low nibble adjust
-        if (((cpu->A & 0x0F) - (1 - carry_in)) < (value & 0x0F)) {
+        if (((cpu->A & 0x0F) - (1 - cpu->C)) < (value & 0x0F)) {
             tmp -= 0x06;
         }
 
@@ -414,93 +400,91 @@ void SBC(cpu_t *cpu, u16 addr)
         result = tmp;
     }
 
-    cpu->A = (u8)result;
+    cpu->A = result & 0xFF;
 
-    Z_flag(cpu, cpu->A);
-    N_flag(cpu, cpu->A);
+    cpu->Z = (cpu->A == 0);
+    cpu->N = (cpu->A >> 7) & 1;
 }
 
 void AND(cpu_t *cpu, u16 addr)
 {
     cpu->A &= read_memory(cpu, addr);
-    Z_flag(cpu, cpu->A);
-    N_flag(cpu, cpu->A);
+    cpu->Z = (cpu->A == 0);
+    cpu->N = (cpu->A >> 7) & 1;
 }
 
 void EOR(cpu_t *cpu, u16 addr)
 {
     cpu->A ^= read_memory(cpu, addr);
-    Z_flag(cpu, cpu->A);
-    N_flag(cpu, cpu->A);
+    cpu->Z = (cpu->A == 0);
+    cpu->N = (cpu->A >> 7) & 1;
 }
 
 void ORA(cpu_t *cpu, u16 addr)
 {
     cpu->A |= read_memory(cpu, addr);
-    Z_flag(cpu, cpu->A);
-    N_flag(cpu, cpu->A);
+    cpu->Z = (cpu->A == 0);
+    cpu->N = (cpu->A >> 7) & 1;
 }
 
 void CMP(cpu_t *cpu, u16 addr)
 {
     u8 value = read_memory(cpu, addr);
     u8 result = cpu->A - value;
-
     cpu->C = (cpu->A >= value);
-    cpu->Z = (cpu->A == value);
-    cpu->N = (result & NEGATIVE_FLAG) ? 1 : 0;
+    cpu->Z = (result == 0);
+    cpu->N = (result >> 7) & 1;
 }
 
 void CPX(cpu_t *cpu, u16 addr)
 {
     u8 value = read_memory(cpu, addr);
     u8 result = cpu->X - value;
-
     cpu->C = (cpu->X >= value);
-    cpu->Z = (cpu->X == value);
-    cpu->N = (result & NEGATIVE_FLAG) ? 1 : 0;
+    cpu->Z = (result == 0);
+    cpu->N = (result >> 7) & 1;
 }
 
 void CPY(cpu_t *cpu, u16 addr)
 {
     u8 value = read_memory(cpu, addr);
-    u8 result = cpu->Y - value;
-
+    u16 result = (u16)cpu->Y - (u16)value;
     cpu->C = (cpu->Y >= value);
-    cpu->Z = (cpu->Y == value);
-    cpu->N = (result & NEGATIVE_FLAG) ? 1 : 0;
+    cpu->Z = (result == 0);
+    cpu->N = (result >> 7) & 1;
 }
 
 void ASL(cpu_t *cpu, u16 addr)
 {
     if (addr == 0) { // IMP/accumulator mode
-        cpu->C = (cpu->A & 0x80) != 0;
+        cpu->C = (cpu->A >> 7) & 1;
         cpu->A <<= 1;
-        Z_flag(cpu, cpu->A);
-        N_flag(cpu, cpu->A);
+        cpu->Z = (cpu->A == 0);
+	    cpu->N = (cpu->A >> 7) & 1;
     } else {
         u8 value = read_memory(cpu, addr);
-        cpu->C = (value & 0x80) != 0;
+        cpu->C = (value >> 7) & 1;
         value <<= 1;
+        cpu->Z = (value == 0);
+	    cpu->N = (value >> 7) & 1;
+
         write_memory(cpu, addr, value);
-        Z_flag(cpu, value);
-        N_flag(cpu, value);
     }
 }
 
 void LSR(cpu_t *cpu, u16 addr)
 {
     if (addr == 0) { // accumulator mode
-        cpu->C = (cpu->A & 0x01) ? 1 : 0;
+        cpu->C = (cpu->A & CARRY_FLAG);
         cpu->A >>= 1;
-        Z_flag(cpu, cpu->A);
-        N_flag(cpu, cpu->A); 
+        cpu->Z = (cpu->A == 0);
+	    cpu->N = (cpu->A >> 7) & 1;
     } else {
         u8 value = read_memory(cpu, addr);
-        cpu->C = (value & 0x01) ? 1 : 0;
+        cpu->C = (value & CARRY_FLAG);
         value >>= 1;
-        Z_flag(cpu, value);
-        N_flag(cpu, value);
+        cpu->Z = (value == 0);
+	    cpu->N = (value >> 7) & 1;
         write_memory(cpu, addr, value);
     }
 }
@@ -510,17 +494,16 @@ void ROL(cpu_t *cpu, u16 addr)
     u8 old_c = cpu->C;
 
     if (addr == 0) {
-        cpu->C = (cpu->A & 0x80) ? 1 : 0;
+        cpu->C = (cpu->A & NEGATIVE_FLAG);
         cpu->A = (cpu->A << 1) | old_c;
-        Z_flag(cpu, cpu->A);                  
-        N_flag(cpu, cpu->A); 
+        cpu->Z = (cpu->A == 0);
+	    cpu->N = (cpu->A >> 7) & 1;
     } else {
         u8 value = read_memory(cpu, addr);
-        cpu->C = (value & 0x80) != 0;       // bit 7 -> Carry
-        value = (value << 1) | old_c;       // shift left, insert old carry
-
-        Z_flag(cpu, value);                  // update Zero flag
-        N_flag(cpu, value);                  // update Negative flag
+        cpu->C = (value & NEGATIVE_FLAG) != 0;       
+        value = (value << 1) | old_c;       
+        cpu->Z = (value == 0);
+	    cpu->N = (value >> 7) & 1;              
 
         write_memory(cpu, addr, value);
     }
@@ -531,18 +514,18 @@ void ROR(cpu_t *cpu, u16 addr)
     u8 old_c = cpu->C;
 
     if (addr == 0) {
-        cpu->C = (cpu->A & CARRY_FLAG) != 0;       // bit 0 -> Carry
-        cpu->A = (cpu->A >> 1) | (old_c << 7);     // shift right, insert old carry
+        cpu->C = (cpu->A & CARRY_FLAG);   
+        cpu->A = (cpu->A >> 1) | old_c;     
 
-        Z_flag(cpu, cpu->A);                       // update Zero flag
-        N_flag(cpu, cpu->A);                       // update Negative flag
+        cpu->Z = (cpu->A == 0);
+	    cpu->N = (cpu->A >> 7) & 1;                          
     } else {
         u8 value = read_memory(cpu, addr);
-        cpu->C = (value & CARRY_FLAG) != 0;       // bit 0 -> Carry
-        value = (value >> 1) | (old_c << 7);// shift right, insert old carry
+        cpu->C = (value & CARRY_FLAG);       
+        value = (value >> 1) | old_c;
 
-        Z_flag(cpu, value);                  // update Zero flag
-        N_flag(cpu, value);                  // update Negative flag
+        cpu->Z = (value == 0);
+	    cpu->N = (value >> 7) & 1;                     
 
         write_memory(cpu, addr, value);
     }
@@ -550,37 +533,37 @@ void ROR(cpu_t *cpu, u16 addr)
 
 void SEC(cpu_t *cpu, u16 addr)
 {
-    cpu->C = true;
+    cpu->C = 1;
 }
 
 void SED(cpu_t *cpu, u16 addr)
 {
-    cpu->D = true;
+    cpu->D = 1;
 }
 
 void SEI(cpu_t *cpu, u16 addr)
 {
-    cpu->I = true;
+    cpu->I = 1;
 }
 
 void CLC(cpu_t *cpu, u16 addr)
 {
-    cpu->C = false;
+    cpu->C = 0;
 }
 
 void CLD(cpu_t *cpu, u16 addr)
 {
-    cpu->D = false;
+    cpu->D = 0;
 }
 
 void CLI(cpu_t *cpu, u16 addr)
 {
-    cpu->I = false;
+    cpu->I = 0;
 }
 
 void CLV(cpu_t *cpu, u16 addr)
 {
-    cpu->V = false;
+    cpu->V = 0;
 }
 
 void BIT(cpu_t *cpu, u16 addr)
@@ -589,13 +572,13 @@ void BIT(cpu_t *cpu, u16 addr)
     u8 result = cpu->A & value;
 
     cpu->Z = (result == 0);
-    cpu->N = (value & NEGATIVE_FLAG) ? 1 : 0;
-    cpu->V = (value & OVERFLOW_FLAG) ? 1 : 0;
+    cpu->N = (value >> 7) & 1;
+    cpu->V = (value >> 6) & 1;
 }
 
 void BRK(cpu_t *cpu, u16 addr)
 {
-    cpu->PC++;
+    cpu->I = 1;
 
     u16 return_addr = cpu->PC;
 
@@ -618,7 +601,6 @@ void BRK(cpu_t *cpu, u16 addr)
     write_memory(cpu, (0x100 | cpu->SP), value);
     cpu->SP--;
 
-    cpu->I = 1;
     cpu->PC = (read_memory(cpu, BRK_HANDLER)) | (read_memory(cpu, BRK_HANDLER+1) << 8);
 }
 

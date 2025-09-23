@@ -11,8 +11,8 @@ void cpu_init(cpu_t *cpu)
     cpu->A = cpu->X = cpu->Y = 0;
 
     // Status flags
-    cpu->N = cpu->V = cpu->B = cpu->D = cpu->Z = cpu->C = false;
-    cpu->I = true; // interrupts disabled on reset
+    cpu->N = cpu->V = cpu->D = cpu->C = 0;
+    cpu->B = cpu->I = cpu->Z = 1; 
 
     // PIA State
     cpu->key_ready = false;

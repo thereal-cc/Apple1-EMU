@@ -5,15 +5,7 @@ int main(int argc, char *argv[]) {
     cpu_t cpu;
     cpu_init(&cpu);
 
-    char *rompath;
-    if (argc != 2) {
-        fprintf(stderr, "No File Loaded\n");
-        return EXIT_FAILURE;
-    } else {
-        rompath = argv[1];
-    }
-
-    u8 status = load_program(&cpu, rompath);
+    u8 status = load_program(&cpu, "./roms/WOZMON");
     if (status) {
         fprintf(stderr, "Error: Could not load ROM\n");
         return EXIT_FAILURE;
@@ -25,8 +17,8 @@ int main(int argc, char *argv[]) {
 	noecho();
     nodelay(stdscr, TRUE);  // make getch() non-blocking
     keypad(stdscr, TRUE);   // handle special keys
+    scrollok(stdscr, TRUE); 
 	
-
     // CPU Clock Cycle
     while (cpu.running) {
         // cpu_display_registers(&cpu);
@@ -36,5 +28,6 @@ int main(int argc, char *argv[]) {
         usleep(1000);
     }
 
+    endwin();
     return EXIT_SUCCESS;
 }
