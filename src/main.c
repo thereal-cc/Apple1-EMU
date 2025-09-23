@@ -21,7 +21,7 @@ int main(int argc, char *argv[]) {
 	
     // CPU Clock Cycle
     while (cpu.running) {
-        // cpu_display_registers(&cpu);
+        //cpu_display_registers(&cpu);
         cpu_cycle(&cpu);
         poll_keyboard(&cpu);
 

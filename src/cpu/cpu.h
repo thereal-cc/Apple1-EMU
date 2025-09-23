@@ -35,13 +35,4 @@ void poll_keyboard(cpu_t *cpu);
 void cpu_display_registers(cpu_t *cpu);
 void print_memory(cpu_t *cpu, u16 start, u16 end);
 
-// Flags
-void N_flag(cpu_t *cpu, u8 value);
-void V_flag(cpu_t *cpu, u8 value, u8 result);
-void B_flag(cpu_t *cpu, u8 value);
-void D_flag(cpu_t *cpu, u8 value);
-void I_flag(cpu_t *cpu, u8 value);
-void Z_flag(cpu_t *cpu, u8 value);
-void C_flag(cpu_t *cpu, u16 value);
-
 #endif

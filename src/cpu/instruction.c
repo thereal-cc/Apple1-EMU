@@ -40,8 +40,8 @@ u16 aby_address(cpu_t *cpu) {
 }
 
 u16 ind_address(cpu_t *cpu) {
-    u16 ptr_lo = read_memory(cpu, cpu->PC++);
-    u16 ptr_hi = read_memory(cpu, cpu->PC++);
+    u8 ptr_lo = read_memory(cpu, cpu->PC++);
+    u8 ptr_hi = read_memory(cpu, cpu->PC++);
     u16 ptr = (ptr_hi << 8) | ptr_lo;
 
     // Emulate 6502 page-boundary bug
@@ -56,17 +56,23 @@ u16 ind_address(cpu_t *cpu) {
 }
 
 u16 indx_address(cpu_t *cpu) {
-    u8 zp_addr = read_memory(cpu, cpu->PC++);
+    u8 zp_addr = read_memory(cpu, cpu->PC++) + cpu->X;
     u8 lo = read_memory(cpu, zp_addr);
     u8 hi = read_memory(cpu, (zp_addr + 1) & 0xFF);
-    return ((hi << 8) | lo) + cpu->X;
+    u16 addr = ((hi << 8) | lo);
+    printw("X: zp=%02X lo=%02X hi=%02X Y=%02X => %04X\n",zp_addr, lo, hi, cpu->Y, addr);
+    refresh();
+    return addr;
 }
 
 u16 indy_address(cpu_t *cpu) {
     u8 zp_addr = read_memory(cpu, cpu->PC++);
     u8 lo = read_memory(cpu, zp_addr);
     u8 hi = read_memory(cpu, (zp_addr + 1) & 0xFF);
-    return ((hi << 8) | lo) + cpu->Y;
+    u16 addr = ((hi << 8) | lo) + cpu->Y;
+    printw("Y: zp=%02X lo=%02X hi=%02X Y=%02X => %04X\n", zp_addr, lo, hi, cpu->Y, addr);
+    refresh();
+    return addr;
 }
 
 u16 imp_address(cpu_t *cpu) {

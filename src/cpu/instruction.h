@@ -4,25 +4,24 @@
 #include "utils/util.h"
 #include "cpu.h"
 
-enum ADDR_MODES
-{
-    IMM,
-    ZP,
-    ZPX,
-    ZPY,
-    ABS,
-    ABX,
-    ABY,
-    IND,
-    IDX,
-    IDY,
-    IMP,
-    REL
+enum ADDR_MODES {
+    IMM, 
+    ZP,  
+    ZPX, 
+    ZPY, 
+    ABS, 
+    ABX, 
+    ABY, 
+    IND, 
+    IDX, 
+    IDY, 
+    IMP, 
+    REL 
 };
 
 typedef struct opcode_t
 {
-    u8 addr_mode;                             // Addressing Modes;   ;
+    enum ADDR_MODES addr_mode;                             // Addressing Modes;   ;
     u8 cycles;                                // Base Cycle Count
     void (*operation)(cpu_t *cpu, u16 addr);  // Pointer to Function Implementation
 } opcode_t;

@@ -39,43 +39,19 @@ void cpu_cycle(cpu_t *cpu)
     opcode_t opcode = opcodes[opcode_byte];
     u16 addr;
 
-    switch(opcode.addr_mode) {
-        case IMM:
-            addr = imm_address(cpu);
-            break;
-        case ZP:
-            addr = zp_address(cpu);
-            break;
-        case ZPX:
-            addr = zpx_address(cpu);
-            break;
-        case ZPY:
-            addr = zpy_address(cpu);
-            break;
-        case ABS:
-            addr = abs_address(cpu);
-            break;
-        case ABX:
-            addr = abx_address(cpu);
-            break;
-        case ABY:
-            addr = aby_address(cpu);
-            break;
-        case IND:
-            addr = ind_address(cpu);
-            break;
-        case IDX:
-            addr = indx_address(cpu);
-            break;
-        case IDY:
-            addr = indy_address(cpu);
-            break;
-        case IMP:
-            addr = imp_address(cpu);
-            break;
-        case REL:
-            addr = rel_address(cpu);
-            break;
+    switch (opcode.addr_mode) {
+        case IMM: addr = imm_address(cpu); break;
+        case ZP:  addr = zp_address(cpu);  break;
+        case ZPX: addr = zpx_address(cpu); break;
+        case ZPY: addr = zpy_address(cpu); break;
+        case ABS: addr = abs_address(cpu); break;
+        case ABX: addr = abx_address(cpu); break;
+        case ABY: addr = aby_address(cpu); break;
+        case IND: addr = ind_address(cpu); break;
+        case IDX: addr = indx_address(cpu); break;
+        case IDY: addr = indy_address(cpu); break;
+        case IMP: addr = imp_address(cpu); break;
+        case REL: addr = rel_address(cpu); break;
     }
 
     opcode.operation(cpu, addr);
@@ -154,26 +130,6 @@ void poll_keyboard(cpu_t *cpu) {
         cpu->key_value = key_hit & 0x7F;
         cpu->key_ready = true;
     }
-}
-
-void N_flag(cpu_t *cpu, u8 value)
-{
-    cpu->N = (value & 0x80) != 0; 
-}
-
-void V_flag(cpu_t *cpu, u8 value, u8 result)
-{
-    cpu->V = ((cpu->A ^ result) & (value ^ result) & NEGATIVE_FLAG) != 0;
-}
-
-void Z_flag(cpu_t *cpu, u8 value)
-{
-    cpu->Z = (value == 0);
-}
-
-void C_flag(cpu_t *cpu, u16 value)
-{
-    cpu->C = (value > 0xFF);
 }
 
 void cpu_display_registers(cpu_t *cpu) {
