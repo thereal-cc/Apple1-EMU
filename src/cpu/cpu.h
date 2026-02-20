@@ -12,13 +12,13 @@ typedef struct
     u8 Y;   // 'Y' Index Register
     u8 memory[MEMORY_SIZE];
     u8 key_value;
-    bool N; // Negative Flag
-    bool V; // Overflow Flag
-    bool B; // B Flag
-    bool D; // Decimal Flag
-    bool I; // Interrupt Disable
-    bool Z; // Zero Flag
-    bool C; // Carry Flag
+    u8 N; // Negative Flag
+    u8 V; // Overflow Flag
+    u8 B; // B Flag
+    u8 D; // Decimal Flag
+    u8 I; // Interrupt Disable
+    u8 Z; // Zero Flag
+    u8 C; // Carry Flag
     bool running;
     bool key_ready;
     u64 global_cycles;
@@ -26,7 +26,7 @@ typedef struct
 
 void cpu_init(cpu_t *cpu);
 void cpu_cycle(cpu_t *cpu);
-u8 load_program(cpu_t *cpu, const char* rom_path);
+u8 load_program(cpu_t *cpu, const char* rom_path, u16 address);
 u8 read_memory(cpu_t *cpu, u16 address);
 void write_memory(cpu_t *cpu, u16 address, u8 value);
 void poll_keyboard(cpu_t *cpu);

@@ -98,9 +98,13 @@ void CPX(cpu_t *cpu, u16 addr);
 void CPY(cpu_t *cpu, u16 addr);
 
 // Shift and Rotate Operations
+void ASL_ACC(cpu_t *cpu, u16 addr);
 void ASL(cpu_t *cpu, u16 addr);
+void LSR_ACC(cpu_t *cpu, u16 addr);
 void LSR(cpu_t *cpu, u16 addr);
+void ROL_ACC(cpu_t *cpu, u16 addr);
 void ROL(cpu_t *cpu, u16 addr);
+void ROR_ACC(cpu_t *cpu, u16 addr);
 void ROR(cpu_t *cpu, u16 addr);
 
 void SEC(cpu_t *cpu, u16 addr); // Set Carry Flag

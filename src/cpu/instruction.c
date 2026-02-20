@@ -56,12 +56,10 @@ u16 ind_address(cpu_t *cpu) {
 }
 
 u16 indx_address(cpu_t *cpu) {
-    u8 zp_addr = read_memory(cpu, cpu->PC++) + cpu->X;
-    u8 lo = read_memory(cpu, zp_addr);
-    u8 hi = read_memory(cpu, (zp_addr + 1) & 0xFF);
+    u8 zp_addr = read_memory(cpu, cpu->PC++);
+    u8 lo = read_memory(cpu, (zp_addr + cpu->X) & 0xFF);
+    u8 hi = read_memory(cpu, (zp_addr + cpu->X + 1) & 0xFF);
     u16 addr = ((hi << 8) | lo);
-    //printw("X: zp=%02X lo=%02X hi=%02X Y=%02X => %04X\n",zp_addr, lo, hi, cpu->Y, addr);
-    //refresh();
     return addr;
 }
 
@@ -70,8 +68,6 @@ u16 indy_address(cpu_t *cpu) {
     u8 lo = read_memory(cpu, zp_addr);
     u8 hi = read_memory(cpu, (zp_addr + 1) & 0xFF);
     u16 addr = ((hi << 8) | lo) + cpu->Y;
-    //printw("Y: zp=%02X lo=%02X hi=%02X Y=%02X => %04X\n", zp_addr, lo, hi, cpu->Y, addr);
-    //refresh();
     return addr;
 }
 
@@ -89,7 +85,7 @@ void LDA(cpu_t *cpu, u16 addr)
     cpu->A = value;
 
     cpu->Z = (cpu->A == 0);
-	cpu->N = (cpu->A >> 7) & 1;  
+  	cpu->N = (cpu->A >> 7) & 1;  
 }
 
 void LDX(cpu_t *cpu, u16 addr)
@@ -161,14 +157,14 @@ void DEC(cpu_t *cpu, u16 addr)
 
 void DEX(cpu_t *cpu, u16 addr)
 {
-    cpu->X--;
+    cpu->X = (cpu->X - 1) & 0xFF;
     cpu->Z = (cpu->X == 0);
     cpu->N = (cpu->X >> 7) & 1;
 }
 
 void DEY(cpu_t *cpu, u16 addr)
 {
-    cpu->Y--;
+    cpu->Y = (cpu->Y - 1) & 0xFF;
     cpu->Z = (cpu->Y == 0);
     cpu->N = (cpu->Y >> 7) & 1;
 }
@@ -316,7 +312,7 @@ void TAX(cpu_t *cpu, u16 addr)
     cpu->X = cpu->A;
 
     cpu->Z = (cpu->X == 0);
-	cpu->N = (cpu->X >> 7) & 1;    
+  	cpu->N = (cpu->X >> 7) & 1;    
 }
 
 void TAY(cpu_t *cpu, u16 addr)
@@ -324,7 +320,7 @@ void TAY(cpu_t *cpu, u16 addr)
     cpu->Y = cpu->A;
     
     cpu->Z = (cpu->Y == 0);
-	cpu->N = (cpu->Y >> 7) & 1;    
+  	cpu->N = (cpu->Y >> 7) & 1;    
 }
 
 void TXA(cpu_t *cpu, u16 addr)
@@ -332,7 +328,7 @@ void TXA(cpu_t *cpu, u16 addr)
     cpu->A = cpu->X;
     
     cpu->Z = (cpu->A == 0);
-	cpu->N = (cpu->A >> 7) & 1;    
+  	cpu->N = (cpu->A >> 7) & 1;    
 } 
 
 void TYA(cpu_t *cpu, u16 addr)
@@ -340,14 +336,14 @@ void TYA(cpu_t *cpu, u16 addr)
     cpu->A = cpu->Y;
     
     cpu->Z = (cpu->A == 0);
-	cpu->N = (cpu->A >> 7) & 1;    
+  	cpu->N = (cpu->A >> 7) & 1;    
 }
 
 void TSX(cpu_t *cpu, u16 addr)
 {
     cpu->X = cpu->SP;
     cpu->Z = (cpu->X == 0);
-	cpu->N = (cpu->X >> 7) & 1;    
+  	cpu->N = (cpu->X >> 7) & 1;    
 }
 
 void TXS(cpu_t *cpu, u16 addr)
@@ -372,8 +368,8 @@ void ADC(cpu_t *cpu, u16 addr)
         }
     }
 
-    cpu->C = (result & 0x100);
-	cpu->V = (cpu->A ^ result) & (value ^ result) & NEGATIVE_FLAG;
+    cpu->C = (result & 0x100) != 0;
+  	cpu->V = ((cpu->A ^ result) & (value ^ result) & NEGATIVE_FLAG) != 0;
 
     cpu->A = result & 0xFF;
 
@@ -385,7 +381,7 @@ void SBC(cpu_t *cpu, u16 addr)
 {
     u8 value = read_memory(cpu, addr);
     u16 result = cpu->A - value - (1 - cpu->C);
-    cpu->C = (result < 0x100);  
+    cpu->C = (result < 0x100) != 0;  
     cpu->V = ((cpu->A ^ result) & (~value ^ result) & 0x80) != 0;
     
 
@@ -460,81 +456,78 @@ void CPY(cpu_t *cpu, u16 addr)
     cpu->N = (result >> 7) & 1;
 }
 
-void ASL(cpu_t *cpu, u16 addr)
+void ASL_ACC(cpu_t *cpu, u16 addr)
 {
-    if (addr == 0) { // IMP/accumulator mode
-        cpu->C = (cpu->A >> 7) & 1;
-        cpu->A <<= 1;
-        cpu->Z = (cpu->A == 0);
-	    cpu->N = (cpu->A >> 7) & 1;
-    } else {
-        u8 value = read_memory(cpu, addr);
-        cpu->C = (value >> 7) & 1;
-        value <<= 1;
-        cpu->Z = (value == 0);
-	    cpu->N = (value >> 7) & 1;
-
-        write_memory(cpu, addr, value);
-    }
+    cpu->C = (cpu->A >> 7) & 1;
+    cpu->A <<= 1;
+    cpu->Z = (cpu->A == 0);
+    cpu->N = (cpu->A & 0x80) != 0;
 }
 
-void LSR(cpu_t *cpu, u16 addr)
+void ASL(cpu_t *cpu, u16 addr)
 {
-    if (addr == 0) { // accumulator mode
-        cpu->C = (cpu->A & CARRY_FLAG);
-        cpu->A >>= 1;
-        cpu->Z = (cpu->A == 0);
-	    cpu->N = (cpu->A >> 7) & 1;
-    } else {
-        u8 value = read_memory(cpu, addr);
-        cpu->C = (value & CARRY_FLAG);
-        value >>= 1;
-        cpu->Z = (value == 0);
-	    cpu->N = (value >> 7) & 1;
-        write_memory(cpu, addr, value);
-    }
+    u8 value = read_memory(cpu, addr);
+    cpu->C = (value >> 7) & 1;
+    value <<= 1;
+    cpu->Z = (value == 0);
+  	cpu->N = (value >> 7) & 1;
+
+    write_memory(cpu, addr, value);
+}
+
+void LSR_ACC(cpu_t *cpu, u16 addr) {
+    cpu->C = (cpu->A & CARRY_FLAG) != 0;
+    cpu->A >>= 1;
+    cpu->Z = (cpu->A == 0);
+    cpu->N = (cpu->A >> 7) & 1;
+}
+
+void LSR(cpu_t *cpu, u16 addr) {
+    u8 value = read_memory(cpu, addr);
+    cpu->C = (value & CARRY_FLAG) != 0;
+    value >>= 1;
+    cpu->Z = (value == 0);
+    cpu->N = (value >> 7) & 1;
+    write_memory(cpu, addr, value);
+}
+
+void ROL_ACC(cpu_t *cpu, u16 addr)
+{
+    u8 old_c = cpu->C;
+    cpu->C = (cpu->A & NEGATIVE_FLAG) != 0;  
+    cpu->A = (cpu->A << 1) | old_c;
+    cpu->Z = (cpu->A == 0);
+	cpu->N = (cpu->A >> 7) & 1;
 }
 
 void ROL(cpu_t *cpu, u16 addr)
 {
     u8 old_c = cpu->C;
+    u8 value = read_memory(cpu, addr);
+    cpu->C = (value & NEGATIVE_FLAG) != 0;       
+    value = (value << 1) | old_c;       
+    cpu->Z = (value == 0);
+	cpu->N = (value >> 7) & 1;              
 
-    if (addr == 0) {
-        cpu->C = (cpu->A & NEGATIVE_FLAG);
-        cpu->A = (cpu->A << 1) | old_c;
-        cpu->Z = (cpu->A == 0);
-	    cpu->N = (cpu->A >> 7) & 1;
-    } else {
-        u8 value = read_memory(cpu, addr);
-        cpu->C = (value & NEGATIVE_FLAG) != 0;       
-        value = (value << 1) | old_c;       
-        cpu->Z = (value == 0);
-	    cpu->N = (value >> 7) & 1;              
-
-        write_memory(cpu, addr, value);
-    }
+    write_memory(cpu, addr, value);
 }
 
-void ROR(cpu_t *cpu, u16 addr)
-{
+void ROR_ACC(cpu_t *cpu, u16 addr) {
     u8 old_c = cpu->C;
+    cpu->C = (cpu->A & CARRY_FLAG) != 0;
+    cpu->A = (cpu->A >> 1) | (old_c << 7);
+    cpu->Z = (cpu->A == 0);
+    cpu->N = (cpu->A >> 7) & 1;
+}
 
-    if (addr == 0) {
-        cpu->C = (cpu->A & CARRY_FLAG);   
-        cpu->A = (cpu->A >> 1) | old_c;     
-
-        cpu->Z = (cpu->A == 0);
-	    cpu->N = (cpu->A >> 7) & 1;                          
-    } else {
-        u8 value = read_memory(cpu, addr);
-        cpu->C = (value & CARRY_FLAG);       
-        value = (value >> 1) | old_c;
-
-        cpu->Z = (value == 0);
-	    cpu->N = (value >> 7) & 1;                     
-
-        write_memory(cpu, addr, value);
-    }
+void ROR(cpu_t *cpu, u16 addr) {
+    u8 old_c = cpu->C;
+    u8 value = read_memory(cpu, addr);
+    cpu->C = (value & CARRY_FLAG) != 0;
+    value = (value >> 1) | (old_c << 7);
+    cpu->Z = (value == 0);
+    cpu->N = (value >> 7) & 1;
+    write_memory(cpu, addr, value);
 }
 
 void SEC(cpu_t *cpu, u16 addr)
@@ -586,7 +579,7 @@ void BRK(cpu_t *cpu, u16 addr)
 {
     cpu->I = 1;
 
-    u16 return_addr = cpu->PC;
+    u16 return_addr = cpu->PC + 1;
 
     write_memory(cpu, 0x100 | cpu->SP, (return_addr >> 8) & 0xFF); 
     cpu->SP--;
@@ -715,25 +708,25 @@ opcode_t opcodes[256] = {
     [0xC4] = {ZP, 3, CPY},  // CPY Zero Page
     [0xCC] = {ABS, 4, CPY}, // CPY Absolute
 
-    [0x0A] = {IMP, 2, ASL}, // ASL Accumulator
+    [0x0A] = {IMP, 2, ASL_ACC}, // ASL Accumulator
     [0x06] = {ZP, 5, ASL},  // ASL Zero Page
     [0x16] = {ZPX, 6, ASL}, // ASL Zero Page,X
     [0x0E] = {ABS, 6, ASL}, // ASL Absolute
     [0x1E] = {ABX, 7, ASL}, // ASL Absolute,X
 
-    [0x4A] = {IMP, 2, LSR}, // LSR Accumulator
+    [0x4A] = {IMP, 2, LSR_ACC}, // LSR Accumulator
     [0x46] = {ZP, 5, LSR},  // LSR Zero Page
     [0x56] = {ZPX, 6, LSR}, // LSR Zero Page,X
     [0x4E] = {ABS, 6, LSR}, // LSR Absolute
     [0x5E] = {ABX, 7, LSR}, // LSR Absolute,X
 
-    [0x2A] = {IMP, 2, ROL}, // ROL Accumulator
+    [0x2A] = {IMP, 2, ROL_ACC}, // ROL Accumulator
     [0x26] = {ZP, 5, ROL},  // ROL Zero Page
     [0x36] = {ZPX, 6, ROL}, // ROL Zero Page,X
     [0x2E] = {ABS, 6, ROL}, // ROL Absolute
     [0x3E] = {ABX, 7, ROL}, // ROL Absolute,X
 
-    [0x6A] = {IMP, 2, ROR}, // ROR Accumulator
+    [0x6A] = {IMP, 2, ROR_ACC}, // ROR Accumulator
     [0x66] = {ZP, 5, ROR},  // ROR Zero Page
     [0x76] = {ZPX, 6, ROR}, // ROR Zero Page,X
     [0x6E] = {ABS, 6, ROR}, // ROR Absolute

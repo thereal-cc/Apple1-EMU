@@ -12,7 +12,7 @@ void cpu_init(cpu_t *cpu)
 
     // Status flags
     cpu->N = cpu->V = cpu->D = cpu->C = 0;
-    cpu->B = cpu->I = cpu->Z = 1; 
+    cpu->B = cpu->I = cpu->Z = 1;
 
     // PIA State
     cpu->key_ready = false;
@@ -35,9 +35,11 @@ void cpu_init(cpu_t *cpu)
 
 void cpu_cycle(cpu_t *cpu)
 {
+    cpu_display_registers(cpu);
+
     u8 opcode_byte = read_memory(cpu, cpu->PC++);
     opcode_t opcode = opcodes[opcode_byte];
-    u16 addr;
+    u16 addr = 0;
 
     switch (opcode.addr_mode) {
         case IMM: addr = imm_address(cpu); break;
@@ -55,18 +57,19 @@ void cpu_cycle(cpu_t *cpu)
     }
 
     opcode.operation(cpu, addr);
+    usleep(1000 * opcode.cycles);
 
     cpu->global_cycles += opcode.cycles;
 }
 
-u8 load_program(cpu_t *cpu, const char* rom_path)
+u8 load_program(cpu_t *cpu, const char* rom_path, u16 address)
 {
     u8 status = 1;
 
     FILE *fptr = fopen(rom_path, "rb");
     if (fptr == NULL) return status;
 
-    size_t bytes_read = fread(cpu->memory + 0xFF00, sizeof(u8), 0x100, fptr);
+    size_t bytes_read = fread(cpu->memory + address, sizeof(u8), 0x100, fptr);
     fclose(fptr);
 
     // Nothing Loaded
@@ -121,7 +124,9 @@ void write_memory(cpu_t *cpu, u16 address, u8 value)
 void poll_keyboard(cpu_t *cpu) {
     int key_hit = getch();
     if (key_hit != ERR) {
-        if (key_hit == '\n') {
+        if (key_hit == '|') {
+        cpu->running = false;
+        } else if (key_hit == '\n') {
             key_hit = '\r';
         } else if (key_hit >= 'a' && key_hit <= 'z'){
 			key_hit += 'A' - 'a';
@@ -144,7 +149,8 @@ void cpu_display_registers(cpu_t *cpu) {
     value |= cpu->V ? OVERFLOW_FLAG : 0;  
     value |= cpu->N ? NEGATIVE_FLAG : 0;  
 
-    printf("A: %02X, X: %02X, Y: %02X, PC: %04X, SP: %02X, SR: %02X\n",
+    FILE *log = fopen("trace.log", "a");
+    fprintf(log, "A: %02X, X: %02X, Y: %02X, PC: %04X, SP: %02X, SR: %02X\n",
                cpu->A, cpu->X, cpu->Y, cpu->PC, cpu->SP, value);
 }
 
