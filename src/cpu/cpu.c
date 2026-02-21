@@ -35,7 +35,8 @@ void cpu_init(cpu_t *cpu)
 
 void cpu_cycle(cpu_t *cpu)
 {
-    cpu_display_registers(cpu);
+    // Debug Function (Prints CPU State to file)
+    // cpu_display_registers(cpu);
 
     u8 opcode_byte = read_memory(cpu, cpu->PC++);
     opcode_t opcode = opcodes[opcode_byte];
