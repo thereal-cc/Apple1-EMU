@@ -1,6 +1,6 @@
 # Apple1-EMU
 
-A simple Apple 1 Emulator written in C. This emulator has currently been tested with WOZMON, but testing with BASIC will be coming soon.
+A simple Apple 1 Emulator written in C. This emulator has currently been tested with WOZMON and BASIC
 
 ## Building
 
@@ -19,3 +19,5 @@ By default, the emulator can only run a 256 byte WOZMON rom. This rom must be su
 ```bash
 ./bin/apple1
 ```
+
+The program can be closed at any time by typing the '|' character. 

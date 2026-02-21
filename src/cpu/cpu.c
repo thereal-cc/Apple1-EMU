@@ -57,7 +57,7 @@ void cpu_cycle(cpu_t *cpu)
     }
 
     opcode.operation(cpu, addr);
-    usleep(1000 * opcode.cycles);
+    usleep(1 * opcode.cycles);
 
     cpu->global_cycles += opcode.cycles;
 }
@@ -152,6 +152,7 @@ void cpu_display_registers(cpu_t *cpu) {
     FILE *log = fopen("trace.log", "a");
     fprintf(log, "A: %02X, X: %02X, Y: %02X, PC: %04X, SP: %02X, SR: %02X\n",
                cpu->A, cpu->X, cpu->Y, cpu->PC, cpu->SP, value);
+    fclose(log);
 }
 
 void print_memory(cpu_t *cpu, u16 start, u16 end) {
