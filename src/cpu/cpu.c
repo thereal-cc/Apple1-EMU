@@ -26,8 +26,8 @@ void cpu_init(cpu_t *cpu)
     cpu->memory[RESET_LOW] = 0x00;
     cpu->memory[RESET_HIGH] = 0xFF;
 
-    cpu->memory[BRK_LOW] = 0x00;
-    cpu->memory[BRK_HIGH] = 0x00;
+    cpu->memory[BRK_LOW] = 0x0F;
+    cpu->memory[BRK_HIGH] = 0xFF;
 
     cpu->running = true;
     cpu->global_cycles = 0;
@@ -62,14 +62,14 @@ void cpu_cycle(cpu_t *cpu)
     cpu->global_cycles += opcode.cycles;
 }
 
-u8 load_program(cpu_t *cpu, const char* rom_path, u16 address)
+u8 load_program(cpu_t *cpu, const char* rom_path, u16 address, u16 size)
 {
     u8 status = 1;
 
     FILE *fptr = fopen(rom_path, "rb");
     if (fptr == NULL) return status;
 
-    size_t bytes_read = fread(cpu->memory + address, sizeof(u8), 0x100, fptr);
+    size_t bytes_read = fread(cpu->memory + address, sizeof(u8), size, fptr);
     fclose(fptr);
 
     // Nothing Loaded

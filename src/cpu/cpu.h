@@ -26,7 +26,7 @@ typedef struct
 
 void cpu_init(cpu_t *cpu);
 void cpu_cycle(cpu_t *cpu);
-u8 load_program(cpu_t *cpu, const char* rom_path, u16 address);
+u8 load_program(cpu_t *cpu, const char* rom_path, u16 address, u16 size);
 u8 read_memory(cpu_t *cpu, u16 address);
 void write_memory(cpu_t *cpu, u16 address, u8 value);
 void poll_keyboard(cpu_t *cpu);

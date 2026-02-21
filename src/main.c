@@ -9,7 +9,7 @@ int main(int argc, char *argv[])
     cpu_init(&cpu);
 
     // Load Wozmon
-    status = load_program(&cpu, "./roms/wozmon.bin", 0xFF00);
+    status = load_program(&cpu, "./roms/wozmon.bin", 0xFF00, 0x100);
     if (status)
     {
         fprintf(stderr, "Error: Could not load Wozmon\n");
@@ -17,7 +17,7 @@ int main(int argc, char *argv[])
     }
 
     // Load Basic
-    status = load_program(&cpu, "./roms/a1basic.bin", 0xE000);
+    status = load_program(&cpu, "./roms/a1basic.bin", 0xE000, 0x1000);
     if (status)
     {
         fprintf(stderr, "Error: Could not load Wozmon\n");
