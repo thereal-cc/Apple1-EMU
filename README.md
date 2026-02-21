@@ -14,7 +14,7 @@ make clean & make
 
 ## Usage
 
-By default, the emulator can only run a 256 byte WOZMON rom. This rom must be supplied by the user, and will not be provided in this repository. In order to run the emulator, put wozmon.bin in the roms folder and type out the following command. 
+While pre-made binaries can't be distributed, [this repository](https://github.com/jefftranter/6502/tree/master/asm) contains the source files necessary, and instructions are provided to help with compiling. In order to run the emulator, put wozmon.bin and a1basic.bin in the roms folder and type out the following command. 
 
 ```bash
 ./bin/apple1
