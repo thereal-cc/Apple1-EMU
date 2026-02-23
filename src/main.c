@@ -8,20 +8,10 @@ int main(int argc, char *argv[])
     cpu_t cpu;
     cpu_init(&cpu);
 
-    // Load Wozmon
-    status = load_program(&cpu, "./roms/wozmon.bin", 0xFF00, 0x100);
-    if (status)
-    {
-        fprintf(stderr, "Error: Could not load Wozmon\n");
-        return EXIT_FAILURE;
-    }
-
-    // Load Basic
-    status = load_program(&cpu, "./roms/a1basic.bin", 0xE000, 0x1000);
-    if (status)
-    {
-        fprintf(stderr, "Error: Could not load Wozmon\n");
-        return EXIT_FAILURE;
+    // Init WOZMON/Basic
+    if (!init_software(&cpu)) {
+        fprintf(stderr, "There was an error loading the Apple II Rom\n");
+        cpu.running = false;
     }
 
     // Init Interface

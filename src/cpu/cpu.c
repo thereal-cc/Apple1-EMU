@@ -18,17 +18,6 @@ void cpu_init(cpu_t *cpu)
     cpu->key_ready = false;
     cpu->key_value = 0;
 
-    // Interrupt Handler
-    cpu->memory[IRQ_LOW] = 0x00;
-    cpu->memory[IRQ_HIGH] = 0xF0;
-
-    // Set reset vector in ROM
-    cpu->memory[RESET_LOW] = 0x00;
-    cpu->memory[RESET_HIGH] = 0xFF;
-
-    cpu->memory[BRK_LOW] = 0x0F;
-    cpu->memory[BRK_HIGH] = 0xFF;
-
     cpu->running = true;
     cpu->global_cycles = 0;
 }
@@ -63,23 +52,67 @@ void cpu_cycle(cpu_t *cpu)
     cpu->global_cycles += opcode.cycles;
 }
 
-u8 load_program(cpu_t *cpu, const char* rom_path, u16 address, u16 size)
+u8 load_program(cpu_t *cpu, const char* rom_path, u16 address)
 {
     u8 status = 1;
 
+    // Load File
     FILE *fptr = fopen(rom_path, "rb");
     if (fptr == NULL) return status;
 
+    if (fseek(fptr, 0, SEEK_END) != 0) { 
+        fprintf(stderr, "Error seeking to end of file\n");
+        fclose(fptr);
+        return status;
+    }
+
+    long size = ftell(fptr);
+    if (size == -1) {
+        fprintf(stderr, "Error getting file position\n");
+        fclose(fptr);
+        return status;
+    }
+    fseek(fptr, 0, SEEK_SET);
+
+    // Load File into CPU Memory
     size_t bytes_read = fread(cpu->memory + address, sizeof(u8), size, fptr);
     fclose(fptr);
 
     // Nothing Loaded
-    if (!bytes_read) return status;
-
-    cpu->PC = (cpu->memory[RESET_HIGH] << 8) | cpu->memory[RESET_LOW];
+    if (!bytes_read) {
+        fprintf(stderr, "Nothing was loaded\n");
+        return status;
+    }
 
     status = 0;
     return status;
+}
+
+bool init_software(cpu_t *cpu)
+{
+
+    u8 status = load_program(cpu, "./roms/wozmon.bin", 0xFF00);
+    if (status)
+    {
+        fprintf(stderr, "Error: Could not load Wozmon\n");
+        return EXIT_FAILURE;
+    }
+
+    // Load Basic
+    status = load_program(cpu, "./roms/a1basic.bin", 0xE000);
+    if (status)
+    {
+        fprintf(stderr, "Error: Could not load Wozmon\n");
+        return EXIT_FAILURE;
+    }
+
+    // Set NMI, Reset, & BRK Locations
+    cpu->NMI_LOC = (cpu->memory[NMI_HIGH_ADDR] << 8) | cpu->memory[NMI_LOW_ADDR];
+    cpu->RESET_LOC = (cpu->memory[RESET_HIGH_ADDR] << 8) | cpu->memory[RESET_LOW_ADDR];
+    cpu->BRK_LOC = (cpu->memory[BRK_HIGH_ADDR] << 8) | cpu->memory[BRK_LOW_ADDR];
+
+    cpu->PC = cpu->RESET_LOC;
+    return true;
 }
 
 u8 read_memory(cpu_t *cpu, u16 address)
