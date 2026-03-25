@@ -17,7 +17,7 @@ make clean & make
 While pre-made binaries can't be distributed, [this repository](https://github.com/jefftranter/6502/tree/master/asm) contains the source files necessary, and instructions are provided to help with compiling. In order to run the emulator, put wozmon.bin and a1basic.bin in the roms folder and type out the following command. 
 
 ```bash
-./bin/apple1
+./bin/apple1 'path to program you want to load' 'start address of that program (in hex)'
 ```
 
 The program can be closed at any time by typing the '|' character. 

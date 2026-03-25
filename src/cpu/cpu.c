@@ -54,23 +54,21 @@ void cpu_cycle(cpu_t *cpu)
 
 u8 load_program(cpu_t *cpu, const char* rom_path, u16 address)
 {
-    u8 status = 1;
-
     // Load File
     FILE *fptr = fopen(rom_path, "rb");
-    if (fptr == NULL) return status;
+    if (fptr == NULL) return 1;
 
     if (fseek(fptr, 0, SEEK_END) != 0) { 
         fprintf(stderr, "Error seeking to end of file\n");
         fclose(fptr);
-        return status;
+        return 1;
     }
 
     long size = ftell(fptr);
     if (size == -1) {
         fprintf(stderr, "Error getting file position\n");
         fclose(fptr);
-        return status;
+        return 1;
     }
     fseek(fptr, 0, SEEK_SET);
 
@@ -81,11 +79,10 @@ u8 load_program(cpu_t *cpu, const char* rom_path, u16 address)
     // Nothing Loaded
     if (!bytes_read) {
         fprintf(stderr, "Nothing was loaded\n");
-        return status;
+        return 1;
     }
 
-    status = 0;
-    return status;
+    return 0;
 }
 
 bool init_software(cpu_t *cpu)
