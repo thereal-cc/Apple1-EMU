@@ -25,6 +25,7 @@ typedef struct
     u16 NMI_LOC;
 
     u8 key_value;
+    u8 cursor_pos;
     bool running;
     bool key_ready;
     u64 global_cycles;

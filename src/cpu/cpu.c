@@ -17,6 +17,7 @@ void cpu_init(cpu_t *cpu)
     // PIA State
     cpu->key_ready = false;
     cpu->key_value = 0;
+    cpu->cursor_pos = 0;
 
     cpu->running = true;
     cpu->global_cycles = 0;
@@ -24,9 +25,6 @@ void cpu_init(cpu_t *cpu)
 
 void cpu_cycle(cpu_t *cpu)
 {
-    // Debug Function (Prints CPU State to file)
-    // cpu_display_registers(cpu);
-
     u8 opcode_byte = read_memory(cpu, cpu->PC++);
     opcode_t opcode = opcodes[opcode_byte];
     u16 addr = 0;
@@ -138,13 +136,27 @@ void write_memory(cpu_t *cpu, u16 address, u8 value)
 {
     if (address == 0xD012) {
         u8 ch = value & 0x7F;
+
         if (ch == 0x7F) {
-            addch('\b');
+            if (cpu->cursor_pos > 0) {
+                cpu->cursor_pos--;
+                addch('\b');
+            }
+
         } else if (ch == '\n' || ch == '\r') {
+            cpu->cursor_pos = 0;
             addch('\n');
+            
         } else if (ch >= 0x20 && ch <= 0x7E) {
+            cpu->cursor_pos++;
             addch(ch);
-        } 
+
+            if (cpu->cursor_pos >= 40) {
+                cpu->cursor_pos = 0;
+                addch('\n');
+            }
+        }
+
         refresh();
         return;
     }

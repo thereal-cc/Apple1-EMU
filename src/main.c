@@ -27,7 +27,7 @@ int main(int argc, char *argv[])
 
         u16 start_addr = (u16)parsed;
 
-        if (load_program(&cpu, argv[1], parsed) != 0) {
+        if (load_program(&cpu, argv[1], start_addr) != 0) {
             fprintf(stderr, "Program was not loaded, booting into Wozmon...\n");
         }
     }
