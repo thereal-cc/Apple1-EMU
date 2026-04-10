@@ -85,17 +85,14 @@ u8 load_program(cpu_t *cpu, const char* rom_path, u16 address)
 
 bool init_software(cpu_t *cpu)
 {
-
-    u8 status = load_program(cpu, "./roms/wozmon.bin", 0xFF00);
-    if (status)
+    if (load_program(cpu, "./roms/wozmon.bin", 0xFF00) != 0)
     {
         fprintf(stderr, "Error: Could not load Wozmon\n");
         return EXIT_FAILURE;
     }
 
     // Load Basic
-    status = load_program(cpu, "./roms/a1basic.bin", 0xE000);
-    if (status)
+    if (load_program(cpu, "./roms/a1basic.bin", 0xE000) != 0)
     {
         fprintf(stderr, "Error: Could not load Wozmon\n");
         return EXIT_FAILURE;
@@ -146,7 +143,7 @@ void write_memory(cpu_t *cpu, u16 address, u8 value)
         } else if (ch == '\n' || ch == '\r') {
             cpu->cursor_pos = 0;
             addch('\n');
-            
+
         } else if (ch >= 0x20 && ch <= 0x7E) {
             cpu->cursor_pos++;
             addch(ch);
@@ -161,7 +158,7 @@ void write_memory(cpu_t *cpu, u16 address, u8 value)
         return;
     }
 
-    cpu->memory[address] = value;
+    if (address < 0xFF00) cpu->memory[address] = value;
 }
 
 void poll_keyboard(cpu_t *cpu) {
@@ -169,7 +166,7 @@ void poll_keyboard(cpu_t *cpu) {
     if (key_hit != ERR) {
         if (key_hit == '|') {
         cpu->running = false;
-        } else if (key_hit == '\n') {
+        } else if (key_hit == '\n' || key_hit == '\r' || key_hit == KEY_ENTER) {
             key_hit = '\r';
         } else if (key_hit >= 'a' && key_hit <= 'z'){
 			key_hit += 'A' - 'a';
