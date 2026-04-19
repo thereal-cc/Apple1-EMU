@@ -18,6 +18,7 @@ typedef struct
     u8 I; // Interrupt Disable
     u8 Z; // Zero Flag
     u8 C; // Carry Flag
+    u8 temp_cycles;
 
     // BRK/RESET/NMI Locations
     u16 BRK_LOC;

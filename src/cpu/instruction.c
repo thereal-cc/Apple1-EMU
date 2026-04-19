@@ -29,14 +29,22 @@ u16 abx_address(cpu_t *cpu) {
     u8 lo = read_memory(cpu, cpu->PC++);
     u8 hi = read_memory(cpu, cpu->PC++);
     u16 base = (hi << 8) | lo;
-    return base + cpu->X; 
+    u16 effective = base + cpu->X;
+
+    if ((base & 0xFF00) != (effective & 0xFF00)) cpu->temp_cycles++;
+
+    return effective; 
 }
 
 u16 aby_address(cpu_t *cpu) {
     u8 lo = read_memory(cpu, cpu->PC++);
     u8 hi = read_memory(cpu, cpu->PC++);
     u16 base = (hi << 8) | lo;
-    return base + cpu->Y; 
+    u16 effective = base + cpu->Y;
+
+    if ((base & 0xFF00) != (effective & 0xFF00)) cpu->temp_cycles++;
+
+    return effective; 
 }
 
 u16 ind_address(cpu_t *cpu) {
@@ -57,8 +65,9 @@ u16 ind_address(cpu_t *cpu) {
 
 u16 indx_address(cpu_t *cpu) {
     u8 zp_addr = read_memory(cpu, cpu->PC++);
-    u8 lo = read_memory(cpu, (zp_addr + cpu->X) & 0xFF);
-    u8 hi = read_memory(cpu, (zp_addr + cpu->X + 1) & 0xFF);
+    u8 ptr = (zp_addr + cpu->X) & 0xFF;
+    u8 lo = read_memory(cpu, ptr);
+    u8 hi = read_memory(cpu, (ptr + 1) & 0xFF);
     u16 addr = ((hi << 8) | lo);
     return addr;
 }
@@ -67,8 +76,12 @@ u16 indy_address(cpu_t *cpu) {
     u8 zp_addr = read_memory(cpu, cpu->PC++);
     u8 lo = read_memory(cpu, zp_addr);
     u8 hi = read_memory(cpu, (zp_addr + 1) & 0xFF);
-    u16 addr = ((hi << 8) | lo) + cpu->Y;
-    return addr;
+    u16 base = ((hi << 8) | lo);
+    u16 effective = base + cpu->Y;
+
+    if ((base & 0xFF00) != (effective & 0xFF00)) cpu->temp_cycles++;
+
+    return effective;
 }
 
 u16 imp_address(cpu_t *cpu) {

@@ -14,6 +14,8 @@ void cpu_init(cpu_t *cpu)
     cpu->N = cpu->V = cpu->D = cpu->C = 0;
     cpu->B = cpu->I = cpu->Z = 1;
 
+    cpu->temp_cycles = 0;
+
     // PIA State
     cpu->key_ready = false;
     cpu->key_value = 0;
@@ -73,11 +75,12 @@ void cpu_cycle(cpu_t *cpu)
     opcode.operation(cpu, addr);
 
     ts.tv_sec = 0;
-    ts.tv_nsec = 10000 * opcode.cycles;
+    ts.tv_nsec = 10000 * (opcode.cycles + cpu->temp_cycles);
 
     nanosleep(&ts, NULL);
 
-    cpu->global_cycles += opcode.cycles;
+    cpu->global_cycles += (opcode.cycles + cpu->temp_cycles);
+    cpu->temp_cycles = 0;
 }
 
 u8 load_program(cpu_t *cpu, const char *rom_path, u16 address)
