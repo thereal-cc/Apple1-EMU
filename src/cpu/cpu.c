@@ -25,45 +25,78 @@ void cpu_init(cpu_t *cpu)
 
 void cpu_cycle(cpu_t *cpu)
 {
+    struct timespec ts;
     u8 opcode_byte = read_memory(cpu, cpu->PC++);
     opcode_t opcode = opcodes[opcode_byte];
     u16 addr = 0;
 
-    switch (opcode.addr_mode) {
-        case IMM: addr = imm_address(cpu); break;
-        case ZP:  addr = zp_address(cpu);  break;
-        case ZPX: addr = zpx_address(cpu); break;
-        case ZPY: addr = zpy_address(cpu); break;
-        case ABS: addr = abs_address(cpu); break;
-        case ABX: addr = abx_address(cpu); break;
-        case ABY: addr = aby_address(cpu); break;
-        case IND: addr = ind_address(cpu); break;
-        case IDX: addr = indx_address(cpu); break;
-        case IDY: addr = indy_address(cpu); break;
-        case IMP: addr = imp_address(cpu); break;
-        case REL: addr = rel_address(cpu); break;
+    switch (opcode.addr_mode)
+    {
+    case IMM:
+        addr = imm_address(cpu);
+        break;
+    case ZP:
+        addr = zp_address(cpu);
+        break;
+    case ZPX:
+        addr = zpx_address(cpu);
+        break;
+    case ZPY:
+        addr = zpy_address(cpu);
+        break;
+    case ABS:
+        addr = abs_address(cpu);
+        break;
+    case ABX:
+        addr = abx_address(cpu);
+        break;
+    case ABY:
+        addr = aby_address(cpu);
+        break;
+    case IND:
+        addr = ind_address(cpu);
+        break;
+    case IDX:
+        addr = indx_address(cpu);
+        break;
+    case IDY:
+        addr = indy_address(cpu);
+        break;
+    case IMP:
+        addr = imp_address(cpu);
+        break;
+    case REL:
+        addr = rel_address(cpu);
+        break;
     }
 
     opcode.operation(cpu, addr);
-    usleep(1 * opcode.cycles);
+
+    ts.tv_sec = 0;
+    ts.tv_nsec = 10000 * opcode.cycles;
+
+    nanosleep(&ts, NULL);
 
     cpu->global_cycles += opcode.cycles;
 }
 
-u8 load_program(cpu_t *cpu, const char* rom_path, u16 address)
+u8 load_program(cpu_t *cpu, const char *rom_path, u16 address)
 {
     // Load File
     FILE *fptr = fopen(rom_path, "rb");
-    if (fptr == NULL) return 1;
+    if (fptr == NULL)
+        return 1;
 
-    if (fseek(fptr, 0, SEEK_END) != 0) { 
+    if (fseek(fptr, 0, SEEK_END) != 0)
+    {
         fprintf(stderr, "Error seeking to end of file\n");
         fclose(fptr);
         return 1;
     }
 
     long size = ftell(fptr);
-    if (size == -1) {
+    if (size == -1)
+    {
         fprintf(stderr, "Error getting file position\n");
         fclose(fptr);
         return 1;
@@ -75,7 +108,8 @@ u8 load_program(cpu_t *cpu, const char* rom_path, u16 address)
     fclose(fptr);
 
     // Nothing Loaded
-    if (!bytes_read) {
+    if (!bytes_read)
+    {
         fprintf(stderr, "Nothing was loaded\n");
         return 1;
     }
@@ -109,20 +143,23 @@ bool init_software(cpu_t *cpu)
 
 u8 read_memory(cpu_t *cpu, u16 address)
 {
-    if (address >= 0xD010 && address <= 0xD013) {
-        switch(address) {
-            case 0xD010: // keyboard data
-                if (cpu->key_ready) {
-                    cpu->key_ready = false;      // clear ready after read
-                    return cpu->key_value | NEGATIVE_FLAG;
-                }
-                return 0;
-            case 0xD011: // keyboard status
-                return cpu->key_ready ? NEGATIVE_FLAG : 0x00;
-            case 0xD012: // video data
-                return 0;
-            case 0xD013: // video status
-                return 0;
+    if (address >= 0xD010 && address <= 0xD013)
+    {
+        switch (address)
+        {
+        case 0xD010: // keyboard data
+            if (cpu->key_ready)
+            {
+                cpu->key_ready = false; // clear ready after read
+                return cpu->key_value | NEGATIVE_FLAG;
+            }
+            return 0;
+        case 0xD011: // keyboard status
+            return cpu->key_ready ? NEGATIVE_FLAG : 0x00;
+        case 0xD012: // video data
+            return 0;
+        case 0xD013: // video status
+            return 0;
         }
     }
 
@@ -131,24 +168,30 @@ u8 read_memory(cpu_t *cpu, u16 address)
 
 void write_memory(cpu_t *cpu, u16 address, u8 value)
 {
-    if (address == 0xD012) {
+    if (address == 0xD012)
+    {
         u8 ch = value & 0x7F;
 
-        if (ch == 0x7F) {
-            if (cpu->cursor_pos > 0) {
+        if (ch == 0x7F)
+        {
+            if (cpu->cursor_pos > 0)
+            {
                 cpu->cursor_pos--;
                 addch('\b');
             }
-
-        } else if (ch == '\n' || ch == '\r') {
+        }
+        else if (ch == '\n' || ch == '\r')
+        {
             cpu->cursor_pos = 0;
             addch('\n');
-
-        } else if (ch >= 0x20 && ch <= 0x7E) {
+        }
+        else if (ch >= 0x20 && ch <= 0x7E)
+        {
             cpu->cursor_pos++;
             addch(ch);
 
-            if (cpu->cursor_pos >= 40) {
+            if (cpu->cursor_pos >= 40)
+            {
                 cpu->cursor_pos = 0;
                 addch('\n');
             }
@@ -158,48 +201,67 @@ void write_memory(cpu_t *cpu, u16 address, u8 value)
         return;
     }
 
-    if (address < 0xFF00) cpu->memory[address] = value;
+    if (address < 0xFF00)
+        cpu->memory[address] = value;
 }
 
-void poll_keyboard(cpu_t *cpu) {
+void poll_keyboard(cpu_t *cpu)
+{
     int key_hit = getch();
-    if (key_hit != ERR) {
-        if (key_hit == '|') {
-        cpu->running = false;
-        } else if (key_hit == '\n' || key_hit == '\r' || key_hit == KEY_ENTER) {
-            key_hit = '\r';
-        } else if (key_hit >= 'a' && key_hit <= 'z'){
-			key_hit += 'A' - 'a';
-        }
+    if (key_hit == ERR) return;
 
-        cpu->key_value = key_hit & 0x7F;
-        cpu->key_ready = true;
+    switch (key_hit) {
+        case KEY_F(1):
+            cpu->PC = cpu->RESET_LOC;
+            return; // Don't set key_ready for control keys
+        case KEY_F(2):
+            clear(); // Clears terminal screen
+            return;
+        case KEY_F(3):
+            cpu->running = false;
+            return; // Immediately exit Emulator
+        case '\n':
+        case '\r':
+        case KEY_ENTER:
+            key_hit = '\r';
+            break;
+        default:
+            if (key_hit >= 'a' && key_hit <= 'z')
+                key_hit += 'A' - 'a';
+            break;
     }
+
+    cpu->key_value = key_hit & 0x7F;
+    cpu->key_ready = true;
 }
 
-void cpu_display_registers(cpu_t *cpu) {
+void cpu_display_registers(cpu_t *cpu)
+{
     u8 value = 0;
 
-    value |= cpu->C ? CARRY_FLAG : 0;  
-    value |= cpu->Z ? ZERO_FLAG : 0;  
-    value |= cpu->I ? INTERRUPT_FLAG : 0;  
-    value |= cpu->D ? DECIMAL_FLAG : 0;  
+    value |= cpu->C ? CARRY_FLAG : 0;
+    value |= cpu->Z ? ZERO_FLAG : 0;
+    value |= cpu->I ? INTERRUPT_FLAG : 0;
+    value |= cpu->D ? DECIMAL_FLAG : 0;
     value |= BREAK_FLAG;
-    value |= 0x20;               
-    value |= cpu->V ? OVERFLOW_FLAG : 0;  
-    value |= cpu->N ? NEGATIVE_FLAG : 0;  
+    value |= 0x20;
+    value |= cpu->V ? OVERFLOW_FLAG : 0;
+    value |= cpu->N ? NEGATIVE_FLAG : 0;
 
     FILE *log = fopen("trace.log", "a");
     fprintf(log, "A: %02X, X: %02X, Y: %02X, PC: %04X, SP: %02X, SR: %02X\n",
-               cpu->A, cpu->X, cpu->Y, cpu->PC, cpu->SP, value);
+            cpu->A, cpu->X, cpu->Y, cpu->PC, cpu->SP, value);
     fclose(log);
 }
 
-void print_memory(cpu_t *cpu, u16 start, u16 end) {
+void print_memory(cpu_t *cpu, u16 start, u16 end)
+{
     printf("Memory dump from $%04X to $%04X:\n", start, end);
-    for (u16 addr = start; addr <= end; addr++) {
+    for (u16 addr = start; addr <= end; addr++)
+    {
         // Print 16 bytes per line
-        if ((addr - start) % 16 == 0) {
+        if ((addr - start) % 16 == 0)
+        {
             printf("\n%04X: ", addr); // Print address label at the start of each line
         }
         printf("%02X ", read_memory(cpu, addr));
